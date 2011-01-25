@@ -188,6 +188,7 @@ function VT100(container) {
   this.savedValid         = [ ];
   this.respondString      = '';
   this.statusString       = '';
+  this.titleString       = '';
   this.internalClipboard  = undefined;
   this.reset(true);
 }
@@ -3846,7 +3847,7 @@ VT100.prototype.doControl = function(ch) {
   case 0x8F: this.isEsc       = 19 /* ESss3 */;                                  break;
   case 0x9A: this.respondID();                                          break;
   case 0x9B: this.isEsc       = 2 /* ESsquare */;                               break;
-  case 0x07: if (this.isEsc != 17 /* ESstatus */) {
+  case 0x07: if (this.isEsc != 17 /* ESstatus */ && this.isEsc != 20 /* title */) {
                this.beep();                                             break;
              }
              /* fall thru */
@@ -3883,7 +3884,7 @@ VT100.prototype.doControl = function(ch) {
       break;
     case 15 /* ESnonstd */:
       switch (ch) {
-/*0*/ case 0x30:
+/*0*/ case 0x30: this.titleString = ''; this.isEsc = 20 /* title */;  break;
 /*1*/ case 0x31:
 /*2*/ case 0x32: this.statusString = ''; this.isEsc  = 17 /* ESstatus */;        break;
 /*P*/ case 0x50: this.npar    = 0; this.par = [ 0, 0, 0, 0, 0, 0, 0 ];
@@ -4087,6 +4088,7 @@ VT100.prototype.doControl = function(ch) {
           this.statusString   = this.statusString.substr(1);
         }
         try {
+          alert(this.statusString);
           window.status       = this.statusString;
         } catch (e) {
         }
@@ -4109,6 +4111,20 @@ VT100.prototype.doControl = function(ch) {
       this.lastCharacter      = String.fromCharCode(ch);
       lineBuf                += this.lastCharacter;
       this.isEsc              = 0 /* ESnormal */;                               break;
+    case 20 /* title */:
+      if (ch == 0x07) {
+        if (this.titleString && this.titleString.charAt(0) == ';') {
+          this.titleString   = this.titleString.substr(1);
+        }
+        try {
+            window.document.title = this.titleString;
+        } catch (e) {
+        }
+        this.isEsc            = 0 /* ESnormal */;
+      } else {
+        this.titleString    += String.fromCharCode(ch);
+      }
+      break;
     default:
       this.isEsc              = 0 /* ESnormal */;                               break;
     }
